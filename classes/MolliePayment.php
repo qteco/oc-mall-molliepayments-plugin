@@ -161,7 +161,7 @@ class MolliePayment extends PaymentProvider
                 'type' => 'text',
             ],
             'live_api_key' => [
-				'label' => 'qteco.molliepayments::lang.settings.live_api_key',
+                'label' => 'qteco.molliepayments::lang.settings.live_api_key',
                 'comment' => 'qteco.molliepayments::lang.settings.live_api_key_label',
                 'span' => 'left',
                 'type' => 'text',
