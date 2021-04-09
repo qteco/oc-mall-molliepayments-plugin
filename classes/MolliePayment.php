@@ -66,7 +66,7 @@ class MolliePayment extends PaymentProvider
         }
 
         if (!$response->isRedirect()) {
-            return $result->fail((array)$response->getData(), $response);
+            return $result->fail((array)$response->getMessage(), $response->getMessage());
         }
 
         Session::put('mall.payment.callback', self::class);
@@ -105,7 +105,7 @@ class MolliePayment extends PaymentProvider
         }
 
         if (!$response->isSuccessful()) {
-            return $result->fail((array)$result, null);
+            return $result->fail((array)$response->getMessage(), $response->getMessage());
         }
 
         return $result->success((array)$result, $response);
