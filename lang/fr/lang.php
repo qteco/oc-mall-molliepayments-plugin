@@ -14,5 +14,8 @@ return [
     ],
     'messages' => [
         'order_number' => 'Commande #',
-    ]
+        'payment_failed' => 'Le paiement n\'a pas été effectué avec succès.',
+        'payment_canceled' => 'Le paiement a été annulé.',
+        'payment_expired' => 'La page de paiement a été abandonnée et le paiement a expiré.',
+    ],
 ];

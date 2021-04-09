@@ -105,7 +105,24 @@ class MolliePayment extends PaymentProvider
         }
 
         if (!$response->isSuccessful()) {
-            return $result->fail((array)$response->getMessage(), $response->getMessage());
+            $response_data = json_decode($response->getMessage());
+            $errormessage = '';
+
+            switch ($response_data->status) {
+                case 'failed':
+                    $errormessage = Lang::get('qteco.molliepayments::lang.messages.payment_failed');
+                    break;
+                case 'canceled':
+                    $errormessage = Lang::get('qteco.molliepayments::lang.messages.payment_canceled');
+                    break;
+                case 'expired':
+                    $errormessage = Lang::get('qteco.molliepayments::lang.messages.payment_expired');
+                    break;
+                default:
+                    break;
+            }
+
+            return $result->fail((array)$response->getMessage(), $errormessage);
         }
 
         return $result->success((array)$result, $response);
