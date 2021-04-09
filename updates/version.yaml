@@ -2,3 +2,5 @@
     - Initialize plugin.
 1.0.2:
     - Improved exception handling
+1.0.3:
+    - Added error messages for failed, canceled and expired payments
