@@ -19,7 +19,7 @@ class Plugin extends PluginBase
             'description' => 'qteco.molliepayments::lang.plugin.description',
             'author'      => 'Qteco B.V.',
             'icon'        => 'icon-money',
-            'homepage'    => 'https://qteco.nl'
+            'homepage'    => 'https://github.com/Qteco/oc-mall-molliepayments-plugin'
         ];
     }
 

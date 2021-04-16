@@ -1,6 +1,8 @@
 1.0.1:
-    - Initialize plugin.
+    - Initial release
 1.0.2:
     - Improved exception handling
 1.0.3:
     - Added error messages for failed, canceled and expired payments
+1.0.4:
+    - Updated composer.json
