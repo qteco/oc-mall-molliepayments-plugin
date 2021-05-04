@@ -1,24 +1,9 @@
 {
     "name": "qteco/molliepayments-plugin",
     "type": "october-plugin",
-    "description": "Mollie payment provider for the OFFLINE.Mall plugin for October CMS.",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Qteco B.V.",
-            "email": "info@qteco.nl",
-            "homepage": "https://qteco.nl",
-            "role": "Publisher"
-        },
-        {
-            "name": "Guus Frenken",
-            "email": "g.frenken@qteco.nl",
-            "role": "Developer"
-        }
-    ],
+    "description": "Mollie payment provider for the OFFLINE.Mall plugin for October CMS",
     "require": {
         "composer/installers": "~1.0",
-        "league/omnipay": "^3.1",
-        "omnipay/mollie": "^5.3"
+        "mollie/mollie-api-php": "^2.0"
     }
 }

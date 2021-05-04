@@ -4,13 +4,29 @@ namespace Qteco\MolliePayments\Classes;
 use OFFLINE\Mall\Classes\Payments\PaymentProvider;
 use OFFLINE\Mall\Classes\Payments\PaymentResult;
 use OFFLINE\Mall\Models\PaymentGatewaySettings;
-use Omnipay\Omnipay;
+use OFFLINE\Mall\Models\OrderState;
+use OFFLINE\Mall\Models\Order;
 use Throwable;
 use Session;
 use Lang;
+use Illuminate\Support\Facades\Log;
 
 class MolliePayment extends PaymentProvider
 {
+    /**
+     * The order that is being paid.
+     *
+     * @var \OFFLINE\Mall\Models\Order
+     */
+    public $order;
+    /**
+     * Data that is needed for the payment.
+     * Card numbers, tokens, etc.
+     *
+     * @var array
+     */
+    public $data;
+
     /**
      * Return the display name of your payment provider.
      *
@@ -52,31 +68,31 @@ class MolliePayment extends PaymentProvider
      */
     public function process(PaymentResult $result): PaymentResult
     {
-        $response = null;
+        $payment = null;
 
         try {
-            $response = $this->getGateway()->purchase([
-                'amount' => $this->order->total_in_currency,
-                'currency' => $this->order->currency['code'],
-                'returnUrl' => $this->returnUrl(),
-                'description' => Lang::get('qteco.molliepayments::lang.messages.order_number') . $this->order->order_number,
-            ])->send();
+            $payment = $this->getGateway()->payments->create([
+                "amount" => [
+                    "currency" => $this->order->currency['code'],
+                    //"value" => $this->order->total_in_currency,
+                    "value" => "10.00"
+                ],
+                "description" => Lang::get('qteco.molliepayments::lang.messages.order_number') . $this->order->order_number,
+                "redirectUrl" => $this->returnUrl(),
+                "webhookUrl"  => "https://malltest.qteco.nl/molliepayments-checkout",
+            ]);
         } catch (Throwable $e) {
             return $result->fail([], $e);
         }
 
-        if (!$response->isRedirect()) {
-            return $result->fail((array)$response->getMessage(), $response->getMessage());
-        }
-
         Session::put('mall.payment.callback', self::class);
-        Session::put('qteco.molliepayments.transactionReference', $response->getTransactionReference());
+        Session::put('qteco.molliepayments.transactionReference', $payment->id);
 
         $this->setOrder($result->order);
-        $result->order->payment_transaction_id = $response->getTransactionReference();
+        $result->order->payment_transaction_id = $payment->id;
         $result->order->save();
 
-        return $result->redirect($response->getRedirectResponse()->getTargetUrl());
+        return $result->redirect($payment->getCheckoutUrl());
     }
 
     /**
@@ -88,50 +104,60 @@ class MolliePayment extends PaymentProvider
      */
     public function complete(PaymentResult $result): PaymentResult
     {
-        $transactionReference = Session::pull('qteco.molliepayments.transactionReference');
+        return $result->success((array)$result, 'payment succeeded');
+    }
 
-        if (!$transactionReference) {
-            return $result->fail([
-                'msg' => 'Missing transaction reference'
-            ], null);
-        }
+    public function changePaymentState($response)
+    {
+        Log::info('Mollie transaction id: ' . $response->id);
+
+        $order = Order::where('payment_transaction_id', $response->id)->first();
+
+        $this->setOrder($order);
+        Log::info('order id: ' . $order->id);
+
+        $result = new PaymentResult($this, $order);
 
         try {
-            $response = $this->getGateway()->completePurchase([
-                'transactionReference' => $transactionReference
-            ])->send();
+            $payment = $this->getGateway()->payments->get($response->id);
         } catch (Throwable $e) {
             return $result->fail([], $e);
         }
 
-        if (!$response->isSuccessful()) {
-            $response_data = json_decode($response->getMessage());
-            $errormessage = '';
+        $errorMessage = '';
 
-            switch ($response_data->status) {
-                case 'failed':
-                    $errormessage = Lang::get('qteco.molliepayments::lang.messages.payment_failed');
-                    break;
-                case 'canceled':
-                    $errormessage = Lang::get('qteco.molliepayments::lang.messages.payment_canceled');
-                    break;
-                case 'expired':
-                    $errormessage = Lang::get('qteco.molliepayments::lang.messages.payment_expired');
-                    break;
-                default:
-                    break;
-            }
+        Log::info('payment status: ' . $payment->status);
 
-            return $result->fail((array)$response->getMessage(), $errormessage);
+        switch ($payment->status) {
+            case 'paid':
+                try {
+                    \Event::fire('mall.checkout.succeeded', $result);
+                    Log::info('fired checkout event');
+                } catch (Throwable $e) {
+                    Log::info('didnt fire checkout event');
+                    return null;
+                }
+
+                return $result->success((array)$payment, $payment->id);
+            case 'expired':
+                $errorMessage = Lang::get('qteco.molliepayments::lang.messages.payment_expired');
+                return $result->fail((array)$payment, $errorMessage);
+            case 'failed':
+                $errorMessage = Lang::get('qteco.molliepayments::lang.messages.payment_failed');
+                return $result->fail((array)$payment, $errorMessage);
+            case 'canceled':
+                $order->save();
+
+                return $result->fail((array)$payment, $errorMessage);
+            default:
+                return $result->fail((array)$payment, 'payment failed for unknown reason');
         }
-
-        return $result->success((array)$result, $response);
     }
 
     /**
-     * Build the Omnipay Gateway for Mollie.
+     * Build the payment gateway for Mollie.
      *
-     * @return \Omnipay\Common\GatewayInterface
+     * @return \Mollie\Api\MollieApiClient
      */
     protected function getGateway()
     {
@@ -143,7 +169,7 @@ class MolliePayment extends PaymentProvider
             $apiKey = PaymentGatewaySettings::get('test_api_key');
         }
 
-        $gateway = Omnipay::create('Mollie');
+        $gateway = new \Mollie\Api\MollieApiClient();
         $gateway->setApiKey(decrypt($apiKey));
 
         return $gateway;
@@ -180,6 +206,12 @@ class MolliePayment extends PaymentProvider
             'live_api_key' => [
                 'label' => 'qteco.molliepayments::lang.settings.live_api_key',
                 'comment' => 'qteco.molliepayments::lang.settings.live_api_key_label',
+                'span' => 'left',
+                'type' => 'text',
+            ],
+            'orders_page' => [
+                'label' => 'Orders page',
+                'comment' => 'Example: http://yourwebsite.com/account/orders',
                 'span' => 'left',
                 'type' => 'text',
             ],
