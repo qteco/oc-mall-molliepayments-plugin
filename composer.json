@@ -1,5 +1,5 @@
 {
-    "name": "qteco/oc-mall-molliepayments-plugin",
+    "name": "qteco/molliepayments-plugin",
     "type": "october-plugin",
     "description": "Mollie payment provider for the OFFLINE.Mall plugin for October CMS.",
     "license": "MIT",
