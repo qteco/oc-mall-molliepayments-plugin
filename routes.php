@@ -1,10 +1,10 @@
 <?php
 use Illuminate\Http\Request;
-use Qteco\MolliePayments\Classes\MolliePayment;
+use Qteco\MallMolliePayments\Classes\MolliePayment;
 
-Route::post('/molliepayments-checkout', function (Request $request) {
+Route::post('/mall-molliepayments-checkout', function (Request $request) {
     $molliePayment = new MolliePayment;
-    $molliePayment->changePaymentState($request);
+    $molliePayment->changePaymentStatus($request);
 
     return exit();
 });
