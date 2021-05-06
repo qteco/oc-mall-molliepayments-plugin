@@ -9,8 +9,7 @@ use OFFLINE\Mall\Models\Order;
 use Throwable;
 use Session;
 use Lang;
-
-use Illuminate\Support\Facades\Log;
+use Log;
 
 class MolliePayment extends PaymentProvider
 {
@@ -20,13 +19,6 @@ class MolliePayment extends PaymentProvider
      * @var \OFFLINE\Mall\Models\Order
      */
     public $order;
-    /**
-     * Data that is needed for the payment.
-     * Card numbers, tokens, etc.
-     *
-     * @var array
-     */
-    public $data;
 
     /**
      * Return the display name of your payment provider.
@@ -74,19 +66,26 @@ class MolliePayment extends PaymentProvider
         $webhookUrl = (!empty($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/';
         $webhookUrl .= 'oc-mall-molliepayments-checkout';
 
+        $activePaymentMethods = $this->getActivePaymentMethods();
+
+        $paymentMethod = null;
+
+        if (in_array($this->order->payment['method']['code'], $activePaymentMethods)) {
+            $paymentMethod = $this->order->payment['method']['code'];
+        }
+
         try {
             $payment = $this->getGateway()->payments->create([
-                "amount" => [
-                    "currency" => $this->order->currency['code'],
-                    //"value" => $this->order->total_in_currency,
-                    "value" => "10.00"
+                'amount' => [
+                    'currency' => $this->order->currency['code'],
+                    'value' => number_format($this->order->total_in_currency, 2),
                 ],
-                "description" => Lang::get('qteco.mallmolliepayments::lang.messages.order_number') . $this->order->order_number,
-                "redirectUrl" => $this->returnUrl(),
-                "webhookUrl" => $webhookUrl,
-                //"method" => "ideal",
-                "metadata" => [
-                    "order_id" => $this->order->order_number,
+                'description' => Lang::get('qteco.mallmolliepayments::lang.messages.order_number') . $this->order->order_number,
+                'redirectUrl' => $this->returnUrl(),
+                'webhookUrl' => $webhookUrl,
+                'method' => $paymentMethod,
+                'metadata' => [
+                    'order_id' => $this->order->order_number,
                 ],
             ]);
         } catch (Throwable $e) {
@@ -98,13 +97,20 @@ class MolliePayment extends PaymentProvider
         return $result->redirect($payment->getCheckoutUrl());
     }
 
+    /**
+     * Mollie has processed the payment and has redirected the user back to the website.
+     *
+     * @param PaymentResult $result
+     *
+     * @return PaymentResult
+     */
     public function complete(PaymentResult $result): PaymentResult
     {
         return $result->redirect(PaymentGatewaySettings::get('orders_page'));
     }
 
     /**
-     * Mollie has processed the payment and has redirected the user back to the website.
+     * Mollie has called our webhook after a payment status change has occurred
      *
      * @param mixed $response
      *
@@ -112,36 +118,38 @@ class MolliePayment extends PaymentProvider
      */
     public function changePaymentStatus($response): PaymentResult
     {
-        $payment = $this->getGateway()->payments->get($response->id);
+        try {
+            // Get payment data from Mollie using transaction ID from the webhook request
+            $payment = $this->getGateway()->payments->get($response->id);
 
-        $order = Order::where('id', $payment->metadata->order_id)->first();
+            // Find the right order using the order ID from the Mollie payment data
+            $order = Order::where('id', $payment->metadata->order_id)->first();
 
-        $this->setOrder($order);
+            // Set the order context
+            $this->setOrder($order);
 
-        $result = new PaymentResult($this, $order);
+            $result = new PaymentResult($this, $order);
 
-        $message = '';
+            $message = '';
 
-        Log::info('payment status: ' . $payment->status);
-
-        switch ($payment->status) {
-            case 'paid':
+            // Update the order based on the payment status that Mollie has provided
+            if ($payment->isPaid() && ! $payment->hasRefunds() && ! $payment->hasChargebacks()) {
                 $message = Lang::get('qteco.mallmolliepayments::lang.messages.payment_paid');
                 return $result->success((array)$payment, $message);
-            case 'expired':
-                $message = Lang::get('qteco.mallmolliepayments::lang.messages.payment_expired');
-                return $result->fail((array)$payment, $message);
-            case 'failed':
+            } elseif ($payment->isFailed()) {
                 $message = Lang::get('qteco.mallmolliepayments::lang.messages.payment_failed');
                 return $result->fail((array)$payment, $message);
-            case 'canceled':
+            } elseif ($payment->isExpired()) {
+                $message = Lang::get('qteco.mallmolliepayments::lang.messages.payment_expired');
+                return $result->fail((array)$payment, $message);
+            } elseif ($payment->isCanceled()) {
                 $message = Lang::get('qteco.mallmolliepayments::lang.messages.payment_canceled');
                 $order->order_state_id = $this->getOrderStateId(OrderState::FLAG_CANCELLED);
                 $order->save();
                 return $result->fail((array)$payment, $message);
-            default:
-                $message = Lang::get('qteco.mallmolliepayments::lang.messages.payment_failed');
-                return $result->fail((array)$payment, $message);
+            }
+        } catch (\Mollie\Api\Exceptions\ApiException $e) {
+            Log::error('API call failed: ' . htmlspecialchars($e->getMessage()));
         }
     }
 
@@ -236,5 +244,22 @@ class MolliePayment extends PaymentProvider
         $orderStateModel = OrderState::where('flag', $orderStateFlag)->first();
 
         return $orderStateModel->id;
+    }
+
+    protected function getActivePaymentMethods(): array
+    {
+        $paymentMethods = [];
+
+        try {
+            $methods = $this->getGateway()->methods->allActive();
+
+            foreach ($methods as $method) {
+                array_push($paymentMethods, $method->id);
+            }
+        } catch (\Mollie\Api\Exceptions\ApiException $e) {
+            Log::error('API call failed: ' . htmlspecialchars($e->getMessage()));
+        }
+
+        return $paymentMethods;
     }
 }
