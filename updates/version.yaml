@@ -6,3 +6,6 @@
     - Added error messages for failed, canceled and expired payments
 1.0.4:
     - Updated composer.json
+1.0.5:
+    - Switched from thephpleague/omnipay-mollie to mollie/mollie-api-php
+    - Created a webhook that Mollie will call when a payment status change occurs
