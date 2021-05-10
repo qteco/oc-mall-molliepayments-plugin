@@ -1,8 +1,8 @@
 <?php
-namespace Qteco\MolliePayments;
+namespace Qteco\MallMolliePayments;
 
 use OFFLINE\Mall\Classes\Payments\PaymentGateway;
-use Qteco\MolliePayments\Classes\MolliePayment;
+use Qteco\MallMolliePayments\Classes\MolliePayment;
 use System\Classes\PluginBase;
 
 class Plugin extends PluginBase
@@ -15,11 +15,11 @@ class Plugin extends PluginBase
     public function pluginDetails()
     {
         return [
-            'name'        => 'qteco.molliepayments::lang.plugin.name',
-            'description' => 'qteco.molliepayments::lang.plugin.description',
-            'author'      => 'Qteco B.V.',
-            'icon'        => 'icon-money',
-            'homepage'    => 'https://github.com/Qteco/oc-mall-molliepayments-plugin'
+            'name' => 'qteco.mallmolliepayments::lang.plugin.name',
+            'description' => 'qteco.mallmolliepayments::lang.plugin.description',
+            'author' => 'Qteco B.V.',
+            'icon' => 'icon-money',
+            'homepage' => 'https://github.com/Qteco/oc-mall-molliepayments-plugin'
         ];
     }
 
