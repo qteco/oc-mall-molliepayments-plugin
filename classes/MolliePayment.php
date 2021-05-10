@@ -133,7 +133,7 @@ class MolliePayment extends PaymentProvider
             $message = '';
 
             // Update the order based on the payment status that Mollie has provided
-            if ($payment->isPaid() && ! $payment->hasRefunds() && ! $payment->hasChargebacks()) {
+            if ($payment->isPaid()) {
                 $message = Lang::get('qteco.mallmolliepayments::lang.messages.payment_paid');
                 return $result->success((array)$payment, $message);
             } elseif ($payment->isFailed()) {
@@ -144,8 +144,6 @@ class MolliePayment extends PaymentProvider
                 return $result->fail((array)$payment, $message);
             } elseif ($payment->isCanceled()) {
                 $message = Lang::get('qteco.mallmolliepayments::lang.messages.payment_canceled');
-                $order->order_state_id = $this->getOrderStateId(OrderState::FLAG_CANCELLED);
-                $order->save();
                 return $result->fail((array)$payment, $message);
             }
         } catch (\Mollie\Api\Exceptions\ApiException $e) {

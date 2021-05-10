@@ -15,11 +15,11 @@ class Plugin extends PluginBase
     public function pluginDetails()
     {
         return [
-            'name'        => 'qteco.mallmolliepayments::lang.plugin.name',
+            'name' => 'qteco.mallmolliepayments::lang.plugin.name',
             'description' => 'qteco.mallmolliepayments::lang.plugin.description',
-            'author'      => 'Qteco B.V.',
-            'icon'        => 'icon-money',
-            'homepage'    => 'https://github.com/Qteco/oc-mall-molliepayments-plugin'
+            'author' => 'Qteco B.V.',
+            'icon' => 'icon-money',
+            'homepage' => 'https://github.com/Qteco/oc-mall-molliepayments-plugin'
         ];
     }
 
