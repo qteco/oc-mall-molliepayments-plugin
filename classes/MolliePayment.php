@@ -4,7 +4,6 @@ namespace Qteco\MallMolliePayments\Classes;
 use OFFLINE\Mall\Classes\Payments\PaymentProvider;
 use OFFLINE\Mall\Classes\Payments\PaymentResult;
 use OFFLINE\Mall\Models\PaymentGatewaySettings;
-use OFFLINE\Mall\Models\OrderState;
 use OFFLINE\Mall\Models\Order;
 use Throwable;
 use Session;
@@ -207,8 +206,8 @@ class MolliePayment extends PaymentProvider
                 'type' => 'text',
             ],
             'orders_page' => [
-                'label' => 'Orders page',
-                'comment' => 'Example: http://yourwebsite.com/account/orders',
+                'label' => 'qteco.mallmolliepayments::lang.settings.orders_page',
+                'comment' => 'qteco.mallmolliepayments::lang.settings.orders_page_label',
                 'span' => 'left',
                 'type' => 'text',
             ],
@@ -229,19 +228,6 @@ class MolliePayment extends PaymentProvider
             'test_api_key',
             'live_api_key',
         ];
-    }
-
-    /**
-     * Getting order state id by flag
-     *
-     * @param $orderStateFlag
-     * @return int
-     */
-    protected function getOrderStateId($orderStateFlag): int
-    {
-        $orderStateModel = OrderState::where('flag', $orderStateFlag)->first();
-
-        return $orderStateModel->id;
     }
 
     protected function getActivePaymentMethods(): array

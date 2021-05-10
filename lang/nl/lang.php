@@ -11,6 +11,8 @@ return [
         'test_api_key_label' => 'Ziet er uit als "test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"',
         'live_api_key' => 'Mollie live API sleutel',
         'live_api_key_label' => 'Ziet er uit als "live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"',
+        'orders_page' => 'Bestellingen pagina',
+        'orders_page_label' => 'Klanten worden na het afrekenen doorgestuurd naar deze pagina, bijvoorbeeld: http://yourwebsite.com/account/orders',
     ],
     'messages' => [
         'order_number' => 'Bestelling #',
