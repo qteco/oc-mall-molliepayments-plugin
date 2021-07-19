@@ -9,4 +9,6 @@
 1.0.5:
     - Switched from thephpleague/omnipay-mollie to mollie/mollie-api-php
     - Created a webhook that Mollie will call when a payment status change occurs
-    
+1.0.6:
+    - Fixed order amounts greater than 1000 getting rejected
+    - Removed unnecessary translations
