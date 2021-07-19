@@ -14,11 +14,4 @@ return [
         'orders_page' => 'Page des commandes',
         'orders_page_label' => 'Les clients seront redirigés vers cette page après le paiement, exemple: http://yourwebsite.com/account/orders',
     ],
-    'messages' => [
-        'order_number' => 'Commande #',
-        'payment_paid' => 'Le paiement a été effectué avec succès.',
-        'payment_failed' => 'Le paiement n\'a pas été effectué avec succès.',
-        'payment_canceled' => 'Le paiement a été annulé.',
-        'payment_expired' => 'La page de paiement a été abandonnée et le paiement a expiré.',
-    ],
 ];

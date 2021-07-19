@@ -14,11 +14,4 @@ return [
         'orders_page' => 'Bestellingen pagina',
         'orders_page_label' => 'Klanten worden na het afrekenen doorgestuurd naar deze pagina, bijvoorbeeld: http://yourwebsite.com/account/orders',
     ],
-    'messages' => [
-        'order_number' => 'Bestelling #',
-        'payment_paid' => 'De betaling is succesvol afgerond.',
-        'payment_failed' => 'De betaling is niet succesvol afgerond.',
-        'payment_canceled' => 'De betaling is geannuleerd.',
-        'payment_expired' => 'De betalingspagina is achtergelaten en de betaling is verlopen.',
-    ],
 ];

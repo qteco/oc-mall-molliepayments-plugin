@@ -7,7 +7,6 @@ use OFFLINE\Mall\Models\PaymentGatewaySettings;
 use OFFLINE\Mall\Models\Order;
 use Throwable;
 use Session;
-use Lang;
 use Log;
 
 class MolliePayment extends PaymentProvider
@@ -79,7 +78,7 @@ class MolliePayment extends PaymentProvider
                     'currency' => $this->order->currency['code'],
                     'value' => number_format($this->order->total_in_currency, 2, '.', ''),
                 ],
-                'description' => Lang::get('qteco.mallmolliepayments::lang.messages.order_number') . $this->order->order_number,
+                'description' => trans('offline.mall::lang.order.order_number') . ': ' . $this->order->order_number,
                 'redirectUrl' => $this->returnUrl(),
                 'webhookUrl' => $webhookUrl,
                 'method' => $paymentMethod,
@@ -129,21 +128,15 @@ class MolliePayment extends PaymentProvider
 
             $result = new PaymentResult($this, $order);
 
-            $message = '';
-
             // Update the order based on the payment status that Mollie has provided
             if ($payment->isPaid()) {
-                $message = Lang::get('qteco.mallmolliepayments::lang.messages.payment_paid');
-                return $result->success((array)$payment, $message);
+                return $result->success((array)$payment, trans('offline.mall::lang.payment_status.paid'));
             } elseif ($payment->isFailed()) {
-                $message = Lang::get('qteco.mallmolliepayments::lang.messages.payment_failed');
-                return $result->fail((array)$payment, $message);
+                return $result->fail((array)$payment, trans('offline.mall::lang.payment_status.failed'));
             } elseif ($payment->isExpired()) {
-                $message = Lang::get('qteco.mallmolliepayments::lang.messages.payment_expired');
-                return $result->fail((array)$payment, $message);
+                return $result->fail((array)$payment, trans('offline.mall::lang.payment_status.expired'));
             } elseif ($payment->isCanceled()) {
-                $message = Lang::get('qteco.mallmolliepayments::lang.messages.payment_canceled');
-                return $result->fail((array)$payment, $message);
+                return $result->fail((array)$payment, trans('offline.mall::lang.payment_status.cancelled'));
             }
         } catch (\Mollie\Api\Exceptions\ApiException $e) {
             Log::error('API call failed: ' . htmlspecialchars($e->getMessage()));

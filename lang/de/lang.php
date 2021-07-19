@@ -14,11 +14,4 @@ return [
         'orders_page' => 'Ihre Bestellseite',
         'orders_page_label' => 'Kunden werden nach dem Auschecken auf diese Seite weitergeleitet, Beispiel: http://yourwebsite.com/account/orders',
     ],
-    'messages' => [
-        'order_number' => 'Bestellung #',
-        'payment_paid' => 'Die Zahlung wurde erfolgreich abgeschlossen.',
-        'payment_failed' => 'Die Zahlung wurde nicht erfolgreich abgeschlossen.',
-        'payment_canceled' => 'Die Zahlung wurde annulliert.',
-        'payment_expired' => 'Die Zahlungsseite wurde abgebrochen und die Zahlung ist abgelaufen.',
-    ],
 ];

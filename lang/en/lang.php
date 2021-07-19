@@ -14,11 +14,4 @@ return [
         'orders_page' => 'Orders page',
         'orders_page_label' => 'Customers will be redirected to this page after checkout, example: http://yourwebsite.com/account/orders',
     ],
-    'messages' => [
-        'order_number' => 'Order #',
-        'payment_paid' => 'The payment was successfully completed.',
-        'payment_failed' => 'The payment has not been successfully completed.',
-        'payment_canceled' => 'The payment has been canceled.',
-        'payment_expired' => 'The payment page has been abandoned and the payment window has expired.',
-    ],
 ];
