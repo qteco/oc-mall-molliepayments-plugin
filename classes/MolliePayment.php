@@ -77,7 +77,7 @@ class MolliePayment extends PaymentProvider
             $payment = $this->getGateway()->payments->create([
                 'amount' => [
                     'currency' => $this->order->currency['code'],
-                    'value' => number_format($this->order->total_in_currency, 2),
+                    'value' => number_format($this->order->total_in_currency, 2, '.', ''),
                 ],
                 'description' => Lang::get('qteco.mallmolliepayments::lang.messages.order_number') . $this->order->order_number,
                 'redirectUrl' => $this->returnUrl(),
