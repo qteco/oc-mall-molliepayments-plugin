@@ -8,3 +8,7 @@ v1.0.5:
 v1.0.6:
     - Fixed order amounts greater than 1000 getting rejected
     - Removed unnecessary translations
+v1.0.7:
+    - Added Offline.Mall as a Composer dependency
+    - Updated version file schema to be compatible with upcoming October CMS versions
+    - Updated README
