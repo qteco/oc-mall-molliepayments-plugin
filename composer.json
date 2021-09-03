@@ -18,7 +18,6 @@
     ],
     "require": {
         "composer/installers": "~1.0",
-        "mollie/mollie-api-php": "^2.0",
-        "rainlab/oc-mall-plugin": "^1.14.0"
+        "mollie/mollie-api-php": "^2.0"
     }
 }
