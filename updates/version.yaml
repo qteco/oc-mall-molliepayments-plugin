@@ -1,14 +1,10 @@
-1.0.1:
-    - Initial release
-1.0.2:
-    - Improved exception handling
-1.0.3:
-    - Added error messages for failed, canceled and expired payments
-1.0.4:
-    - Updated composer.json
-1.0.5:
+v1.0.1: Initial release
+v1.0.2: Improved exception handling
+v1.0.3: Added error messages for failed, canceled and expired payments
+v1.0.4: Updated composer.json
+v1.0.5:
     - Switched from thephpleague/omnipay-mollie to mollie/mollie-api-php
     - Created a webhook that Mollie will call when a payment status change occurs
-1.0.6:
+v1.0.6:
     - Fixed order amounts greater than 1000 getting rejected
     - Removed unnecessary translations
