@@ -10,16 +10,16 @@ class Plugin extends PluginBase
     /**
      * @var array Plugin dependencies
      */
-    public $require = ['Offline.Mall'];
+    public $require = ["Offline.Mall"];
 
     public function pluginDetails()
     {
         return [
-            'name' => 'qteco.mallmolliepayments::lang.plugin.name',
-            'description' => 'qteco.mallmolliepayments::lang.plugin.description',
-            'author' => 'Qteco B.V.',
-            'icon' => 'icon-money',
-            'homepage' => 'https://github.com/Qteco/oc-mall-molliepayments-plugin'
+            "name" => "qteco.mallmolliepayments::lang.plugin.name",
+            "description" => "qteco.mallmolliepayments::lang.plugin.description",
+            "author" => "Qteco B.V.",
+            "icon" => "icon-money",
+            "homepage" => "https://github.com/Qteco/oc-mall-molliepayments-plugin",
         ];
     }
 
