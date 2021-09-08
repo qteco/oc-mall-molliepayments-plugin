@@ -12,16 +12,12 @@ use Log;
 class MolliePayment extends PaymentProvider
 {
     /**
-     * The order that is being paid.
-     *
-     * @var \OFFLINE\Mall\Models\Order
+     * {@inheritdoc}
      */
     public $order;
 
     /**
-     * Return the display name of your payment provider.
-     *
-     * @return string
+     * {@inheritdoc}
      */
     public function name(): string
     {
@@ -29,9 +25,7 @@ class MolliePayment extends PaymentProvider
     }
 
     /**
-     * Return a unique identifier for this payment provider.
-     *
-     * @return string
+     * {@inheritdoc}
      */
     public function identifier(): string
     {
@@ -39,11 +33,53 @@ class MolliePayment extends PaymentProvider
     }
 
     /**
-     * Validate the given input data for this payment.
-     *
-     * @return bool
-     *
-     * @throws \October\Rain\Exception\ValidationException
+     * {@inheritdoc}
+     */
+    public function settings(): array
+    {
+        return [
+            "mollie_mode" => [
+                "label" => "qteco.mallmolliepayments::lang.settings.mollie_mode",
+                "default" => "test",
+                "comment" => "qteco.mallmolliepayments::lang.settings.mollie_mode_label",
+                "span" => "left",
+                "type" => "dropdown",
+                "options" => [
+                    "test" => "Test",
+                    "live" => "Live",
+                ],
+            ],
+            "test_api_key" => [
+                "label" => "qteco.mallmolliepayments::lang.settings.test_api_key",
+                "comment" => "qteco.mallmolliepayments::lang.settings.test_api_key_label",
+                "span" => "left",
+                "type" => "text",
+            ],
+            "live_api_key" => [
+                "label" => "qteco.mallmolliepayments::lang.settings.live_api_key",
+                "comment" => "qteco.mallmolliepayments::lang.settings.live_api_key_label",
+                "span" => "left",
+                "type" => "text",
+            ],
+            "orders_page" => [
+                "label" => "qteco.mallmolliepayments::lang.settings.orders_page",
+                "comment" => "qteco.mallmolliepayments::lang.settings.orders_page_label",
+                "span" => "left",
+                "type" => "text",
+            ],
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function encryptedSettings(): array
+    {
+        return ["test_api_key", "live_api_key"];
+    }
+
+    /**
+     * {@inheritdoc}
      */
     public function validate(): bool
     {
@@ -51,11 +87,7 @@ class MolliePayment extends PaymentProvider
     }
 
     /**
-     * Process the payment.
-     *
-     * @param PaymentResult $result
-     *
-     * @return PaymentResult
+     * {@inheritdoc}
      */
     public function process(PaymentResult $result): PaymentResult
     {
@@ -96,7 +128,7 @@ class MolliePayment extends PaymentProvider
     }
 
     /**
-     * Mollie has processed the payment and has redirected the user back to the website.
+     * Mollie has processed the payment and has redirected the user back to the website
      *
      * @param PaymentResult $result
      *
@@ -144,7 +176,7 @@ class MolliePayment extends PaymentProvider
     }
 
     /**
-     * Build the payment gateway for Mollie.
+     * Build the payment gateway for Mollie
      *
      * @return \Mollie\Api\MollieApiClient
      */
@@ -165,61 +197,10 @@ class MolliePayment extends PaymentProvider
     }
 
     /**
-     * Return any custom backend settings fields.
-     *
-     * These fields will be rendered in the backend
-     * settings page of your provider.
+     * Produce an array of active Mollie payment methods
      *
      * @return array
      */
-    public function settings(): array
-    {
-        return [
-            "mollie_mode" => [
-                "label" => "qteco.mallmolliepayments::lang.settings.mollie_mode",
-                "default" => "test",
-                "comment" => "qteco.mallmolliepayments::lang.settings.mollie_mode_label",
-                "span" => "left",
-                "type" => "dropdown",
-                "options" => [
-                    "test" => "Test",
-                    "live" => "Live",
-                ],
-            ],
-            "test_api_key" => [
-                "label" => "qteco.mallmolliepayments::lang.settings.test_api_key",
-                "comment" => "qteco.mallmolliepayments::lang.settings.test_api_key_label",
-                "span" => "left",
-                "type" => "text",
-            ],
-            "live_api_key" => [
-                "label" => "qteco.mallmolliepayments::lang.settings.live_api_key",
-                "comment" => "qteco.mallmolliepayments::lang.settings.live_api_key_label",
-                "span" => "left",
-                "type" => "text",
-            ],
-            "orders_page" => [
-                "label" => "qteco.mallmolliepayments::lang.settings.orders_page",
-                "comment" => "qteco.mallmolliepayments::lang.settings.orders_page_label",
-                "span" => "left",
-                "type" => "text",
-            ],
-        ];
-    }
-
-    /**
-     * Setting keys returned from this method are stored encrypted.
-     *
-     * Use this to store API tokens and other secret data
-     * that is needed for this PaymentProvider to work.
-     *
-     * @return array
-     */
-    public function encryptedSettings(): array
-    {
-        return ["test_api_key", "live_api_key"];
-    }
-
     protected function getActivePaymentMethods(): array
     {
         $paymentMethods = [];
