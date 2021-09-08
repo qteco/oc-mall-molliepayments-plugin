@@ -83,7 +83,7 @@ class MolliePayment extends PaymentProvider
                 'webhookUrl' => $webhookUrl,
                 'method' => $paymentMethod,
                 'metadata' => [
-                    'order_id' => $this->order->order_number,
+                    'order_number' => $this->order->order_number,
                 ],
             ]);
         } catch (Throwable $e) {
@@ -120,8 +120,8 @@ class MolliePayment extends PaymentProvider
             // Get payment data from Mollie using transaction ID from the webhook request
             $payment = $this->getGateway()->payments->get($response->id);
 
-            // Find the right order using the order ID from the Mollie payment data
-            $order = Order::where('id', $payment->metadata->order_id)->first();
+            // Find the right order using the order number from the Mollie payment data
+            $order = Order::where('order_number', $payment->metadata->order_number)->first();
 
             // Set the order context
             $this->setOrder($order);
