@@ -119,7 +119,7 @@ class MolliePayment extends PaymentProvider
         }
 
         Session::put("mall.payment.callback", self::class);
-        Session::put("qteco.mallmolliepayments.orderReference", $payment->id);
+        Session::put("qteco.mallmolliepayments.paymentReference", $payment->id);
 
         return $result->redirect($payment->getCheckoutUrl());
     }
@@ -133,9 +133,9 @@ class MolliePayment extends PaymentProvider
      */
     public function complete(PaymentResult $result): PaymentResult
     {
-        $orderReference = Session::pull("qteco.mallmolliepayments.orderReference");
+        $payment = Session::pull("qteco.mallmolliepayments.paymentReference");
 
-        return self::changePaymentStatus($orderReference);
+        return self::changePaymentStatus($payment);
     }
 
     /**
