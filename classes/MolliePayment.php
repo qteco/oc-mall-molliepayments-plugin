@@ -141,9 +141,9 @@ class MolliePayment extends PaymentProvider
     /**
      * Mollie has called our webhook after a payment status change has occurred
      *
-     * @param mixed $response
+     * @param mixed $payment_id Mollie transaction ID of the order who's status needs to changed
      *
-     * @return PaymentResult
+     * @return PaymentResult An instance of PaymentResult with a changed payment status
      */
     public function changePaymentStatus($payment_id): PaymentResult
     {
@@ -177,7 +177,7 @@ class MolliePayment extends PaymentProvider
     /**
      * Build the payment gateway for Mollie
      *
-     * @return MollieApiClient
+     * @return MollieApiClient An instance of the Mollie payment gateway
      */
     protected function getGateway(): MollieApiClient
     {
