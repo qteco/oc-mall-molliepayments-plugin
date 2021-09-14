@@ -4,6 +4,8 @@ namespace Qteco\MallMolliePayments\Classes;
 use OFFLINE\Mall\Classes\Payments\PaymentProvider;
 use OFFLINE\Mall\Classes\Payments\PaymentResult;
 use OFFLINE\Mall\Models\PaymentGatewaySettings;
+use Mollie\Api\MollieApiClient;
+use Mollie\Api\Exceptions\ApiException as MollieApiException;
 use OFFLINE\Mall\Models\Order;
 use Throwable;
 use Session;
@@ -58,12 +60,6 @@ class MolliePayment extends PaymentProvider
             "live_api_key" => [
                 "label" => "qteco.mallmolliepayments::lang.settings.live_api_key",
                 "comment" => "qteco.mallmolliepayments::lang.settings.live_api_key_label",
-                "span" => "left",
-                "type" => "text",
-            ],
-            "orders_page" => [
-                "label" => "qteco.mallmolliepayments::lang.settings.orders_page",
-                "comment" => "qteco.mallmolliepayments::lang.settings.orders_page_label",
                 "span" => "left",
                 "type" => "text",
             ],
@@ -123,6 +119,7 @@ class MolliePayment extends PaymentProvider
         }
 
         Session::put("mall.payment.callback", self::class);
+        Session::put("qteco.mallmolliepayments.orderReference", $payment->id);
 
         return $result->redirect($payment->getCheckoutUrl());
     }
@@ -136,7 +133,9 @@ class MolliePayment extends PaymentProvider
      */
     public function complete(PaymentResult $result): PaymentResult
     {
-        return $result->redirect(PaymentGatewaySettings::get("orders_page"));
+        $orderReference = Session::pull("qteco.mallmolliepayments.orderReference");
+
+        return self::changePaymentStatus($orderReference);
     }
 
     /**
@@ -146,11 +145,11 @@ class MolliePayment extends PaymentProvider
      *
      * @return PaymentResult
      */
-    public function changePaymentStatus($response): PaymentResult
+    public function changePaymentStatus($payment_id): PaymentResult
     {
         try {
             // Get payment data from Mollie using transaction ID from the webhook request
-            $payment = $this->getGateway()->payments->get($response->id);
+            $payment = $this->getGateway()->payments->get($payment_id);
 
             // Find the right order using the order number from the Mollie payment data
             $order = Order::where("order_number", $payment->metadata->order_number)->first();
@@ -170,7 +169,7 @@ class MolliePayment extends PaymentProvider
             } elseif ($payment->isCanceled()) {
                 return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.cancelled"));
             }
-        } catch (\Mollie\Api\Exceptions\ApiException $e) {
+        } catch (MollieApiException $e) {
             Log::error("API call failed: " . htmlspecialchars($e->getMessage()));
         }
     }
@@ -178,9 +177,9 @@ class MolliePayment extends PaymentProvider
     /**
      * Build the payment gateway for Mollie
      *
-     * @return \Mollie\Api\MollieApiClient
+     * @return MollieApiClient
      */
-    protected function getGateway()
+    protected function getGateway(): MollieApiClient
     {
         $apiKey = null;
 
@@ -190,7 +189,7 @@ class MolliePayment extends PaymentProvider
             $apiKey = PaymentGatewaySettings::get("test_api_key");
         }
 
-        $gateway = new \Mollie\Api\MollieApiClient();
+        $gateway = new MollieApiClient();
         $gateway->setApiKey(decrypt($apiKey));
 
         return $gateway;
@@ -199,7 +198,7 @@ class MolliePayment extends PaymentProvider
     /**
      * Produce an array of active Mollie payment methods
      *
-     * @return array
+     * @return array An array of payment methods that are enabled in the Mollie Dashboard
      */
     protected function getActivePaymentMethods(): array
     {
@@ -211,7 +210,7 @@ class MolliePayment extends PaymentProvider
             foreach ($methods as $method) {
                 array_push($paymentMethods, $method->id);
             }
-        } catch (\Mollie\Api\Exceptions\ApiException $e) {
+        } catch (MollieApiException $e) {
             Log::error("API call failed: " . htmlspecialchars($e->getMessage()));
         }
 
