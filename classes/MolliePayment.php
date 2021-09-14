@@ -12,38 +12,74 @@ use Log;
 class MolliePayment extends PaymentProvider
 {
     /**
-     * The order that is being paid.
-     *
-     * @var \OFFLINE\Mall\Models\Order
+     * {@inheritdoc}
      */
     public $order;
 
     /**
-     * Return the display name of your payment provider.
-     *
-     * @return string
+     * {@inheritdoc}
      */
     public function name(): string
     {
-        return 'Mollie';
+        return "Mollie";
     }
 
     /**
-     * Return a unique identifier for this payment provider.
-     *
-     * @return string
+     * {@inheritdoc}
      */
     public function identifier(): string
     {
-        return 'mollie';
+        return "mollie";
     }
 
     /**
-     * Validate the given input data for this payment.
-     *
-     * @return bool
-     *
-     * @throws \October\Rain\Exception\ValidationException
+     * {@inheritdoc}
+     */
+    public function settings(): array
+    {
+        return [
+            "mollie_mode" => [
+                "label" => "qteco.mallmolliepayments::lang.settings.mollie_mode",
+                "default" => "test",
+                "comment" => "qteco.mallmolliepayments::lang.settings.mollie_mode_label",
+                "span" => "left",
+                "type" => "dropdown",
+                "options" => [
+                    "test" => "Test",
+                    "live" => "Live",
+                ],
+            ],
+            "test_api_key" => [
+                "label" => "qteco.mallmolliepayments::lang.settings.test_api_key",
+                "comment" => "qteco.mallmolliepayments::lang.settings.test_api_key_label",
+                "span" => "left",
+                "type" => "text",
+            ],
+            "live_api_key" => [
+                "label" => "qteco.mallmolliepayments::lang.settings.live_api_key",
+                "comment" => "qteco.mallmolliepayments::lang.settings.live_api_key_label",
+                "span" => "left",
+                "type" => "text",
+            ],
+            "orders_page" => [
+                "label" => "qteco.mallmolliepayments::lang.settings.orders_page",
+                "comment" => "qteco.mallmolliepayments::lang.settings.orders_page_label",
+                "span" => "left",
+                "type" => "text",
+            ],
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function encryptedSettings(): array
+    {
+        return ["test_api_key", "live_api_key"];
+    }
+
+    /**
+     * {@inheritdoc}
      */
     public function validate(): bool
     {
@@ -51,52 +87,48 @@ class MolliePayment extends PaymentProvider
     }
 
     /**
-     * Process the payment.
-     *
-     * @param PaymentResult $result
-     *
-     * @return PaymentResult
+     * {@inheritdoc}
      */
     public function process(PaymentResult $result): PaymentResult
     {
         $payment = null;
 
-        $webhookUrl = (!empty($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/';
-        $webhookUrl .= 'oc-mall-molliepayments-checkout';
+        $webhookUrl = (!empty($_SERVER["HTTPS"]) ? "https" : "http") . "://" . $_SERVER["HTTP_HOST"] . "/";
+        $webhookUrl .= "oc-mall-molliepayments-checkout";
 
         $activePaymentMethods = $this->getActivePaymentMethods();
 
         $paymentMethod = null;
 
-        if (in_array($this->order->payment['method']['code'], $activePaymentMethods)) {
-            $paymentMethod = $this->order->payment['method']['code'];
+        if (in_array($this->order->payment["method"]["code"], $activePaymentMethods)) {
+            $paymentMethod = $this->order->payment["method"]["code"];
         }
 
         try {
             $payment = $this->getGateway()->payments->create([
-                'amount' => [
-                    'currency' => $this->order->currency['code'],
-                    'value' => number_format($this->order->total_in_currency, 2, '.', ''),
+                "amount" => [
+                    "currency" => $this->order->currency["code"],
+                    "value" => number_format($this->order->total_in_currency, 2, ".", ""),
                 ],
-                'description' => trans('offline.mall::lang.order.order_number') . ': ' . $this->order->order_number,
-                'redirectUrl' => $this->returnUrl(),
-                'webhookUrl' => $webhookUrl,
-                'method' => $paymentMethod,
-                'metadata' => [
-                    'order_id' => $this->order->order_number,
+                "description" => trans("offline.mall::lang.order.order_number") . ": " . $this->order->order_number,
+                "redirectUrl" => $this->returnUrl(),
+                "webhookUrl" => $webhookUrl,
+                "method" => $paymentMethod,
+                "metadata" => [
+                    "order_number" => $this->order->order_number,
                 ],
             ]);
         } catch (Throwable $e) {
             return $result->fail([], $e);
         }
 
-        Session::put('mall.payment.callback', self::class);
+        Session::put("mall.payment.callback", self::class);
 
         return $result->redirect($payment->getCheckoutUrl());
     }
 
     /**
-     * Mollie has processed the payment and has redirected the user back to the website.
+     * Mollie has processed the payment and has redirected the user back to the website
      *
      * @param PaymentResult $result
      *
@@ -104,7 +136,7 @@ class MolliePayment extends PaymentProvider
      */
     public function complete(PaymentResult $result): PaymentResult
     {
-        return $result->redirect(PaymentGatewaySettings::get('orders_page'));
+        return $result->redirect(PaymentGatewaySettings::get("orders_page"));
     }
 
     /**
@@ -120,8 +152,8 @@ class MolliePayment extends PaymentProvider
             // Get payment data from Mollie using transaction ID from the webhook request
             $payment = $this->getGateway()->payments->get($response->id);
 
-            // Find the right order using the order ID from the Mollie payment data
-            $order = Order::where('id', $payment->metadata->order_id)->first();
+            // Find the right order using the order number from the Mollie payment data
+            $order = Order::where("order_number", $payment->metadata->order_number)->first();
 
             // Set the order context
             $this->setOrder($order);
@@ -130,21 +162,21 @@ class MolliePayment extends PaymentProvider
 
             // Update the order based on the payment status that Mollie has provided
             if ($payment->isPaid()) {
-                return $result->success((array)$payment, trans('offline.mall::lang.payment_status.paid'));
+                return $result->success((array) $payment, trans("offline.mall::lang.payment_status.paid"));
             } elseif ($payment->isFailed()) {
-                return $result->fail((array)$payment, trans('offline.mall::lang.payment_status.failed'));
+                return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.failed"));
             } elseif ($payment->isExpired()) {
-                return $result->fail((array)$payment, trans('offline.mall::lang.payment_status.expired'));
+                return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.expired"));
             } elseif ($payment->isCanceled()) {
-                return $result->fail((array)$payment, trans('offline.mall::lang.payment_status.cancelled'));
+                return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.cancelled"));
             }
         } catch (\Mollie\Api\Exceptions\ApiException $e) {
-            Log::error('API call failed: ' . htmlspecialchars($e->getMessage()));
+            Log::error("API call failed: " . htmlspecialchars($e->getMessage()));
         }
     }
 
     /**
-     * Build the payment gateway for Mollie.
+     * Build the payment gateway for Mollie
      *
      * @return \Mollie\Api\MollieApiClient
      */
@@ -152,10 +184,10 @@ class MolliePayment extends PaymentProvider
     {
         $apiKey = null;
 
-        if (PaymentGatewaySettings::get('mollie_mode') == 'live') {
-            $apiKey = PaymentGatewaySettings::get('live_api_key');
+        if (PaymentGatewaySettings::get("mollie_mode") == "live") {
+            $apiKey = PaymentGatewaySettings::get("live_api_key");
         } else {
-            $apiKey = PaymentGatewaySettings::get('test_api_key');
+            $apiKey = PaymentGatewaySettings::get("test_api_key");
         }
 
         $gateway = new \Mollie\Api\MollieApiClient();
@@ -165,64 +197,10 @@ class MolliePayment extends PaymentProvider
     }
 
     /**
-     * Return any custom backend settings fields.
-     *
-     * These fields will be rendered in the backend
-     * settings page of your provider.
+     * Produce an array of active Mollie payment methods
      *
      * @return array
      */
-    public function settings(): array
-    {
-        return [
-            'mollie_mode' => [
-                'label' => 'qteco.mallmolliepayments::lang.settings.mollie_mode',
-                'default' => 'test',
-                'comment' => 'qteco.mallmolliepayments::lang.settings.mollie_mode_label',
-                'span' => 'left',
-                'type' => 'dropdown',
-                'options' => [
-                    'test' => 'Test',
-                    'live' => 'Live',
-                ],
-            ],
-            'test_api_key' => [
-                'label' => 'qteco.mallmolliepayments::lang.settings.test_api_key',
-                'comment' => 'qteco.mallmolliepayments::lang.settings.test_api_key_label',
-                'span' => 'left',
-                'type' => 'text',
-            ],
-            'live_api_key' => [
-                'label' => 'qteco.mallmolliepayments::lang.settings.live_api_key',
-                'comment' => 'qteco.mallmolliepayments::lang.settings.live_api_key_label',
-                'span' => 'left',
-                'type' => 'text',
-            ],
-            'orders_page' => [
-                'label' => 'qteco.mallmolliepayments::lang.settings.orders_page',
-                'comment' => 'qteco.mallmolliepayments::lang.settings.orders_page_label',
-                'span' => 'left',
-                'type' => 'text',
-            ],
-        ];
-    }
-
-    /**
-     * Setting keys returned from this method are stored encrypted.
-     *
-     * Use this to store API tokens and other secret data
-     * that is needed for this PaymentProvider to work.
-     *
-     * @return array
-     */
-    public function encryptedSettings(): array
-    {
-        return [
-            'test_api_key',
-            'live_api_key',
-        ];
-    }
-
     protected function getActivePaymentMethods(): array
     {
         $paymentMethods = [];
@@ -234,7 +212,7 @@ class MolliePayment extends PaymentProvider
                 array_push($paymentMethods, $method->id);
             }
         } catch (\Mollie\Api\Exceptions\ApiException $e) {
-            Log::error('API call failed: ' . htmlspecialchars($e->getMessage()));
+            Log::error("API call failed: " . htmlspecialchars($e->getMessage()));
         }
 
         return $paymentMethods;
