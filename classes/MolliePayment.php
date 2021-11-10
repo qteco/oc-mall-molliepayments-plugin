@@ -8,6 +8,7 @@ use OFFLINE\Mall\Models\Order;
 use Throwable;
 use Session;
 use Log;
+use Event;
 
 class MolliePayment extends PaymentProvider
 {
@@ -162,6 +163,10 @@ class MolliePayment extends PaymentProvider
 
             // Update the order based on the payment status that Mollie has provided
             if ($payment->isPaid()) {
+                
+                // Send a notification to the admin, confirming that the checkout has succeeded
+                Event::fire('mall.checkout.succeeded', [$result]);
+                
                 return $result->success((array) $payment, trans("offline.mall::lang.payment_status.paid"));
             } elseif ($payment->isFailed()) {
                 return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.failed"));
