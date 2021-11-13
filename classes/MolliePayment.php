@@ -119,7 +119,7 @@ class MolliePayment extends PaymentProvider
         }
 
         Session::put("mall.payment.callback", self::class);
-        Session::put("qteco.mallmolliepayments.paymentReference", $payment->id);
+        Session::put("qteco.mallmolliepayments.paymentId", $payment->id);
 
         return $result->redirect($payment->getCheckoutUrl());
     }
@@ -133,9 +133,9 @@ class MolliePayment extends PaymentProvider
      */
     public function complete(PaymentResult $result): PaymentResult
     {
-        $payment = Session::pull("qteco.mallmolliepayments.paymentReference");
+        $payment_id = Session::pull("qteco.mallmolliepayments.paymentId");
 
-        return self::changePaymentStatus($payment);
+        return self::changePaymentStatus($payment_id);
     }
 
     /**
@@ -145,7 +145,7 @@ class MolliePayment extends PaymentProvider
      *
      * @return PaymentResult An instance of PaymentResult with a changed payment status
      */
-    public function changePaymentStatus($payment_id): PaymentResult
+    public function changePaymentStatus(string $payment_id, bool $from_webhook = false): ?PaymentResult
     {
         try {
             // Get payment data from Mollie using transaction ID from the webhook request
@@ -160,15 +160,21 @@ class MolliePayment extends PaymentProvider
             $result = new PaymentResult($this, $order);
 
             // Update the order based on the payment status that Mollie has provided
-            if ($payment->isPaid()) {
-                return $result->success((array) $payment, trans("offline.mall::lang.payment_status.paid"));
-            } elseif ($payment->isFailed()) {
-                return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.failed"));
-            } elseif ($payment->isExpired()) {
-                return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.expired"));
-            } elseif ($payment->isCanceled()) {
-                return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.cancelled"));
+            if ($from_webhook) {
+                if ($payment->isExpired()) {
+                    return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.expired"));
+                }
+            } else {
+                if ($payment->isPaid()) {
+                    return $result->success((array) $payment, trans("offline.mall::lang.payment_status.paid"));
+                } elseif ($payment->isFailed()) {
+                    return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.failed"));
+                } elseif ($payment->isCanceled()) {
+                    return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.cancelled"));
+                }
             }
+
+            return null;
         } catch (MollieApiException $e) {
             Log::error("API call failed: " . htmlspecialchars($e->getMessage()));
         }
