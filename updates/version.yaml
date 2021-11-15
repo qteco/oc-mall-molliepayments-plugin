@@ -13,3 +13,4 @@ v1.0.7:
     - Updated version file schema to be compatible with upcoming October CMS versions
     - Updated README
 v1.0.8: Fix condition where the wrong order's status could be updated
+v1.0.9: Redirect to correct page after completing order
