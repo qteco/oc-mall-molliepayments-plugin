@@ -167,6 +167,8 @@ class MolliePayment extends PaymentProvider
             } else {
                 if ($payment->isPaid()) {
                     return $result->success((array) $payment, trans("offline.mall::lang.payment_status.paid"));
+                } elseif ($payment->isOpen()) {
+                    return $result->pending((array) $payment, trans("offline.mall::lang.payment_status.open"));
                 } elseif ($payment->isFailed()) {
                     return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.failed"));
                 } elseif ($payment->isCanceled()) {
