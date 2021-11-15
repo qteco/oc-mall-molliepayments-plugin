@@ -4,7 +4,7 @@ use Qteco\MallMolliePayments\Classes\MolliePayment;
 
 Route::post("/oc-mall-molliepayments-checkout", function (Request $request) {
     $molliePayment = new MolliePayment();
-    $molliePayment->changePaymentStatus($request);
+    $molliePayment->changePaymentStatus($request->id, true);
 
     return exit();
 });

@@ -11,8 +11,5 @@ return [
         "test_api_key_label" => 'Looks like "test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"',
         "live_api_key" => "Mollie live API key",
         "live_api_key_label" => 'Looks like "live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"',
-        "orders_page" => "Orders page",
-        "orders_page_label" =>
-            "Customers will be redirected to this page after checkout, example: http://yourwebsite.com/account/orders",
     ],
 ];

@@ -4,6 +4,8 @@ namespace Qteco\MallMolliePayments\Classes;
 use OFFLINE\Mall\Classes\Payments\PaymentProvider;
 use OFFLINE\Mall\Classes\Payments\PaymentResult;
 use OFFLINE\Mall\Models\PaymentGatewaySettings;
+use Mollie\Api\MollieApiClient;
+use Mollie\Api\Exceptions\ApiException as MollieApiException;
 use OFFLINE\Mall\Models\Order;
 use Throwable;
 use Session;
@@ -58,12 +60,6 @@ class MolliePayment extends PaymentProvider
             "live_api_key" => [
                 "label" => "qteco.mallmolliepayments::lang.settings.live_api_key",
                 "comment" => "qteco.mallmolliepayments::lang.settings.live_api_key_label",
-                "span" => "left",
-                "type" => "text",
-            ],
-            "orders_page" => [
-                "label" => "qteco.mallmolliepayments::lang.settings.orders_page",
-                "comment" => "qteco.mallmolliepayments::lang.settings.orders_page_label",
                 "span" => "left",
                 "type" => "text",
             ],
@@ -123,6 +119,7 @@ class MolliePayment extends PaymentProvider
         }
 
         Session::put("mall.payment.callback", self::class);
+        Session::put("qteco.mallmolliepayments.paymentId", $payment->id);
 
         return $result->redirect($payment->getCheckoutUrl());
     }
@@ -136,21 +133,23 @@ class MolliePayment extends PaymentProvider
      */
     public function complete(PaymentResult $result): PaymentResult
     {
-        return $result->redirect(PaymentGatewaySettings::get("orders_page"));
+        $payment_id = Session::pull("qteco.mallmolliepayments.paymentId");
+
+        return self::changePaymentStatus($payment_id);
     }
 
     /**
      * Mollie has called our webhook after a payment status change has occurred
      *
-     * @param mixed $response
+     * @param mixed $payment_id Mollie transaction ID of the order who's status needs to changed
      *
-     * @return PaymentResult
+     * @return PaymentResult An instance of PaymentResult with a changed payment status
      */
-    public function changePaymentStatus($response): PaymentResult
+    public function changePaymentStatus(string $payment_id, bool $from_webhook = false): ?PaymentResult
     {
         try {
             // Get payment data from Mollie using transaction ID from the webhook request
-            $payment = $this->getGateway()->payments->get($response->id);
+            $payment = $this->getGateway()->payments->get($payment_id);
 
             // Find the right order using the order number from the Mollie payment data
             $order = Order::where("order_number", $payment->metadata->order_number)->first();
@@ -161,16 +160,24 @@ class MolliePayment extends PaymentProvider
             $result = new PaymentResult($this, $order);
 
             // Update the order based on the payment status that Mollie has provided
-            if ($payment->isPaid()) {
-                return $result->success((array) $payment, trans("offline.mall::lang.payment_status.paid"));
-            } elseif ($payment->isFailed()) {
-                return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.failed"));
-            } elseif ($payment->isExpired()) {
-                return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.expired"));
-            } elseif ($payment->isCanceled()) {
-                return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.cancelled"));
+            if ($from_webhook) {
+                if ($payment->isExpired()) {
+                    return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.expired"));
+                }
+            } else {
+                if ($payment->isPaid()) {
+                    return $result->success((array) $payment, trans("offline.mall::lang.payment_status.paid"));
+                } elseif ($payment->isOpen()) {
+                    return $result->pending((array) $payment, trans("offline.mall::lang.payment_status.open"));
+                } elseif ($payment->isFailed()) {
+                    return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.failed"));
+                } elseif ($payment->isCanceled()) {
+                    return $result->fail((array) $payment, trans("offline.mall::lang.payment_status.cancelled"));
+                }
             }
-        } catch (\Mollie\Api\Exceptions\ApiException $e) {
+
+            return null;
+        } catch (MollieApiException $e) {
             Log::error("API call failed: " . htmlspecialchars($e->getMessage()));
         }
     }
@@ -178,9 +185,9 @@ class MolliePayment extends PaymentProvider
     /**
      * Build the payment gateway for Mollie
      *
-     * @return \Mollie\Api\MollieApiClient
+     * @return MollieApiClient An instance of the Mollie payment gateway
      */
-    protected function getGateway()
+    protected function getGateway(): MollieApiClient
     {
         $apiKey = null;
 
@@ -190,7 +197,7 @@ class MolliePayment extends PaymentProvider
             $apiKey = PaymentGatewaySettings::get("test_api_key");
         }
 
-        $gateway = new \Mollie\Api\MollieApiClient();
+        $gateway = new MollieApiClient();
         $gateway->setApiKey(decrypt($apiKey));
 
         return $gateway;
@@ -199,7 +206,7 @@ class MolliePayment extends PaymentProvider
     /**
      * Produce an array of active Mollie payment methods
      *
-     * @return array
+     * @return array An array of payment methods that are enabled in the Mollie Dashboard
      */
     protected function getActivePaymentMethods(): array
     {
@@ -211,7 +218,7 @@ class MolliePayment extends PaymentProvider
             foreach ($methods as $method) {
                 array_push($paymentMethods, $method->id);
             }
-        } catch (\Mollie\Api\Exceptions\ApiException $e) {
+        } catch (MollieApiException $e) {
             Log::error("API call failed: " . htmlspecialchars($e->getMessage()));
         }
 
